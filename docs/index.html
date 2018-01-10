@@ -248,7 +248,15 @@ div.tocify {
 
 <div id="bar-plot" class="section level2">
 <h2>Bar Plot</h2>
-<pre class="r"><code>d_na &lt;- d %&gt;% 
+<pre class="r"><code>library(tidyverse)
+library(readxl)
+library(here)
+library(DT)
+
+d_xlsx &lt;- here(&quot;data/Trojan 1994 to Present.xlsx&quot;)
+d &lt;- read_excel(d_xlsx, na=&quot;no data&quot;)
+
+d_na &lt;- d %&gt;% 
   filter(is.na(`Pb Concentration (mg/L)`)) %&gt;%
   mutate(
     lbl = &quot;NA&quot;,
@@ -274,8 +282,8 @@ g + geom_col() +
 <div id="data" class="section level2">
 <h2>Data</h2>
 <pre class="r"><code>datatable(d)</code></pre>
-<div id="htmlwidget-0f4659e62a3727033870" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-0f4659e62a3727033870">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"],[1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017],[1.1,null,null,null,null,5.2,4.6,5.9,0.99,15,38.6,2.1,1,13,2.3,0.69,4.2,3.7,0.16,1.2,2.1,2.7,0.37,0.56]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Year<\/th>\n      <th>Pb Concentration (mg/L)<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-5d7102f5a909b823fcf8" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-5d7102f5a909b823fcf8">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"],[1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017],[1.1,null,null,null,null,5.2,4.6,5.9,0.99,15,38.6,2.1,1,13,2.3,0.69,4.2,3.7,0.16,1.2,2.1,2.7,0.37,0.56]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>Year<\/th>\n      <th>Pb Concentration (mg/L)<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 
 

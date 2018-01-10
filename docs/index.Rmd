@@ -10,7 +10,12 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=F)
+knitr::opts_chunk$set(echo = T, warning = F, message = F)
+```
+
+## Bar Plot
+
+```{r bar}
 library(tidyverse)
 library(readxl)
 library(here)
@@ -18,11 +23,7 @@ library(DT)
 
 d_xlsx <- here("data/Trojan 1994 to Present.xlsx")
 d <- read_excel(d_xlsx, na="no data")
-```
 
-## Bar Plot
-
-```{r bar}
 d_na <- d %>% 
   filter(is.na(`Pb Concentration (mg/L)`)) %>%
   mutate(
