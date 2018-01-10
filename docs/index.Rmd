@@ -1,0 +1,56 @@
+---
+title: "Quick Plots for Metals Report"
+author: "Ben Best"
+date: "January 10, 2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=F)
+library(tidyverse)
+library(readxl)
+library(here)
+library(DT)
+
+d_xlsx <- here("data/Trojan 1994 to Present.xlsx")
+d <- read_excel(d_xlsx, na="no data")
+```
+
+## Bar Plot
+
+```{r bar}
+d_na <- d %>% 
+  filter(is.na(`Pb Concentration (mg/L)`)) %>%
+  mutate(
+    lbl = "NA",
+    y   = 0)
+
+g <- ggplot(d, aes(x=Year, y=`Pb Concentration (mg/L)`))
+g + geom_col() +
+  geom_text(
+    aes(x=Year, y=y, label=lbl), data=d_na,
+    size=3, vjust=-0.5)
+```
+
+## Point Plot
+
+```{r point}
+g + geom_point()
+```
+
+## Point & Line Plot
+
+```{r point-line}
+g + geom_point() + geom_line()
+```
+
+## Data
+
+```{r tbl}
+datatable(d)
+```
+
