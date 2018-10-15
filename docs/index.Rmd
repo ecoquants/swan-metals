@@ -16,6 +16,11 @@ editor_options:
 knitr::opts_chunk$set(echo = T, warning = F, message = F)
 ```
 
+# 2018-10-12
+
+Can I ask you to create a basic graph with the attached lead data w/ indicators for three numeric concentrations (CTR 0.0025 mg/L, Benchmark 0.0816 mg/L & NAL 0.26 mg/L). Its fine if some of the highest concentrations actually go off the graph.  I'm imagining the horizontal axis is years/dates and the vertical is lead concentrations.  
+
+
 # 1420.2 Sample History
 
 ## Timeseries of Pb per Facility over Years
