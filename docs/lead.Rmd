@@ -106,6 +106,22 @@ ggplot(d, aes(x=date, y=pb)) +
   theme_bw()
 ```
 
+
+```{r fig_01_notlog, fig.cap="Lead concentration of stormwater pollution samples over time 1992 to 2013, in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from  0.16 mg/L (96% exceedance) on 2012-11-30 to 38.6 mg/L (47,204% exceedance) on 2003-04-14."}
+
+ggplot(d, aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(aes(yintercept=0.0816), color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration (mg/L)") +
+  scale_x_date(
+    date_breaks = "5 years", name = "Date sampled", 
+    date_minor_breaks = "1 year",
+    expand=c(0.02,0.02), date_labels = "%Y") +
+  theme_bw()
+```
+
 ## Table 10
 
 2013 to 2017 Stormwater Pollution Data As Certified by Defendant
@@ -143,6 +159,21 @@ ggplot(d, aes(x=date, y=pb)) +
     date_minor_breaks = "1 month",
     expand=c(0.02,0.02), date_labels = "%Y") +
   annotation_logticks(sides = "l") +
+  theme_bw()
+```
+
+```{r fig_10_notlog, fig.cap="Lead concentration of stormwater pollution samples over time 2013 to 2017, in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from 0.25 mg/L (206% exceedance) on 2016-02-17 to 2.7 mg/L (3,209% exceedance) on 2015-12-22."}
+
+ggplot(d, aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(aes(yintercept=0.0816), color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration (mg/L)") +
+  scale_x_date(
+    date_breaks = "1 year", name = "Date sampled", 
+    date_minor_breaks = "1 month",
+    expand=c(0.02,0.02), date_labels = "%Y") +
   theme_bw()
 ```
 
@@ -185,5 +216,21 @@ ggplot(d, aes(x=date, y=pb)) +
     expand=c(0.02,0.02), 
     date_labels = "%Y-%m") +
   annotation_logticks(sides = "l") +
+  theme_bw()
+```
+
+```{r fig_14_notlog, fig.cap="Lead concentration of stormwater pollution samples over time 2013 to 2017 as certified by Trojan, in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from 1 mg/L (1,126% exceedance) on 2018-03-02 to 2.4 mg/L (2,841% exceedance) on 2018-01-09."}
+
+ggplot(d, aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(aes(yintercept=0.0816), color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration (mg/L)") +
+  scale_x_date(
+    date_breaks = "1 month", name = "Date sampled", 
+    date_minor_breaks = "1 day",
+    expand=c(0.02,0.02), 
+    date_labels = "%Y-%m") +
   theme_bw()
 ```
