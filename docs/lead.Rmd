@@ -8,6 +8,7 @@ output:
     toc: yes
     toc_depth: 4
     toc_float: yes
+    self_contained: no
 editor_options: 
   chunk_output_type: console
 ---
@@ -24,49 +25,6 @@ library(readxl)
 library(DT)
 library(lubridate)
 here = here::here
-
-lead_xlsx <- here("data/lead.xlsx")
-
-sheets <- excel_sheets(lead_xlsx) # "Table1"  "Table10" "Table14"
-```
-
-[Benchmark limits developed by EPA](https://www.cwea.org/p3s/documents/multi-sectorrev.pdf):
-
--  Lead, Total (H): 0.0816 mg/L. Source: EPA Recommended Ambient Water Quality Criteria. Acute Aquatic Life Freshwater.
-
-## Table 1
-
-1992-2013 Stormwater Pollution Data As Certified by Defendant
-
-Data fixes for plotting:
-
-- 2003-2004: 02.02.04	not tested -> **removed**
-- 2009-2010: No AR on file -> **12.31.09**
-- 2008-2009: 11.04.07, 12.15.07 -> 11.04.**08**, 12.15.**08**
-
-```{r tbl_01}
-pb_benchmark <- 0.0816
-
-d <- read_excel(lead_xlsx, "Table1") %>% 
-  filter(!is.na(`Pb Concentration`) & `Pb Concentration` != "not tested") %>%
-  fill(`Permit Term`, `Sample Date`, `Data Source`) %>% 
-  #View()
-  mutate(
-    date = recode(
-      `Sample Date`, "No AR on file"="12.31.09", "11.04.07"="11.04.08", "12.15.07"="12.15.08") %>% 
-      as_date(format="%m.%d.%y", tz=Sys.timezone()),
-    pb = str_extract(`Pb Concentration`, "\\d+\\.*\\d*") %>% as.double(),
-    pct_exceedance = (pb - pb_benchmark) / pb_benchmark)
-d %>% 
-  select(`Permit Term`, `Sample Date`, date, pb, pct_exceedance) %>% 
-  # `Pb Concentration`, `Percent Benchmark Exceedance`, `Data Source`
-  datatable() %>% 
-  formatPercentage('pct_exceedance', 2)
-```
-
-### Figure for Table 1
-
-```{r fig_01, fig.cap="Lead concentration of stormwater pollution samples over time 1992 to 2013, on log10 scale in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from  0.16 mg/L (96% exceedance) on 2012-11-30 to 38.6 mg/L (47,204% exceedance) on 2003-04-14."}
 
 log_breaks = function(maj, radix=10) {
   function(x) {
@@ -91,7 +49,244 @@ scale_y_log_eng = function(..., radix=10) {
                      minor_breaks=log_breaks(FALSE, radix))
 }
 
-ggplot(d, aes(x=date, y=pb)) + 
+lead_xlsx <- here("data/lead.xlsx")
+sheets <- excel_sheets(lead_xlsx) # "Table1"  "Table10" "Table14"
+```
+
+[Benchmark limits developed by EPA](https://www.cwea.org/p3s/documents/multi-sectorrev.pdf):
+
+-  Lead, Total (H): 0.0816 mg/L. Source: EPA Recommended Ambient Water Quality Criteria. Acute Aquatic Life Freshwater.
+
+## Round 2
+
+Jesse's feedback from Round 1:
+
+> First, I need one graph that contains the the entire span of time--1993 to 2018.  Second, I need one graph for the relevant statute of limitations, i.e. 2013 to 2018.  Third, its fine (perhaps good) if the one major outlier does not appear on the graph.  I fear that including that data point ends up weakening the impact of the other data points by making them look so much closer to the red line. Fourth, I need two lines depicting the NAL (0.26 mg/L) and the CTR/CCC (0.003 mg/L), both of which should be labeled. 
+>
+> The point of these exhibits is to show the judge just how freakin' far above the limits Trojan has been every single time it sample. I'm TOTALLY open to your input about how to make these the most impactful.  Is it hard to produce these graphs given how high Trojan's lead concentrations are?
+
+```{r data}
+# benchmarks
+pb_benchmark <- 0.0816
+bench_nal <- c("NAL"=0.26)  # NAL
+bench_ctr <- c("CTR/CCC"=0.003) # CTR/CCC
+
+d01 <- read_excel(lead_xlsx, "Table1") %>% 
+  filter(!is.na(`Pb Concentration`) & `Pb Concentration` != "not tested") %>%
+  fill(`Permit Term`, `Sample Date`, `Data Source`) %>% 
+  #View()
+  mutate(
+    date = recode(
+      `Sample Date`, "No AR on file"="12.31.09", "11.04.07"="11.04.08", "12.15.07"="12.15.08") %>% 
+      as_date(format="%m.%d.%y", tz=Sys.timezone()),
+    pb = str_extract(`Pb Concentration`, "\\d+\\.*\\d*") %>% as.double(),
+    pct_exceedance = (pb - pb_benchmark) / pb_benchmark)
+
+
+d10 <- read_excel(lead_xlsx, "Table10") %>% 
+  fill(`Permit Term`) %>% 
+  mutate(
+    date = as_date(`Sample Date`, format="%m.%d.%y", tz=Sys.timezone()),
+    pb = str_extract(`Pb Concentration`, "\\d+\\.*\\d*") %>% as.double(),
+    pct_exceedance = (pb - pb_benchmark) / pb_benchmark)
+
+d14 <- read_excel(lead_xlsx, "Table14") %>% 
+  fill(`Permit Term`) %>% 
+  mutate(
+    date = as_date(`Sample Date`, format="%m.%d.%y", tz=Sys.timezone()),
+    pb = str_extract(`Pb Concentration`, "\\d+\\.*\\d*") %>% as.double(),
+    pct_exceedance = (pb - pb_benchmark) / pb_benchmark)
+
+d_all <- bind_rows(
+  d01 %>% select(date, pb, pct_exceedance),
+  d10 %>% select(date, pb, pct_exceedance),
+  d14 %>% select(date, pb, pct_exceedance))
+```
+
+### 1993 to 2018
+
+#### Figure 1993 to 2018, Log10
+```{r fig_1993to2018_log10, fig.cap="Lead concentration of stormwater pollution samples over time 1993 to 2013, on log10 scale in units of milligrams per liter (mg/L)."}
+ggplot(d_all, aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(aes(yintercept=bench_ctr, linetype="CTR/CCC"), color="orange") + 
+  geom_hline(aes(yintercept=bench_nal, linetype="NAL"), color="red") + 
+  # scale_linetype_manual(
+  #    name = "limit", values = c(2, 3), 
+  #    guide = guide_legend(override.aes = list(color = c("red", "orange"))))
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration, log10(mg/L)") +
+  scale_y_log_eng() +
+  scale_x_date(
+    date_breaks = "5 years", name = "Date sampled", 
+    date_minor_breaks = "1 year",
+    expand=c(0.02,0.02), date_labels = "%Y") +
+  annotation_logticks(sides = "l") +
+  guides(
+    linetype = guide_legend(
+      title = "Benchmark",
+      override.aes = list(color = c("orange", "red")))) +
+  theme_bw() + 
+  theme(
+    legend.justification = c(1,1),
+    legend.position = c(1, 1),
+    legend.background = element_rect(
+      color = "black", fill = "white", size = 0.2, linetype = "solid"))
+```
+
+#### Figure 1993 to 2018, NOT Log10
+```{r fig_1993to2018, fig.cap="Lead concentration of stormwater pollution samples over time 1993 to 2013, in units of milligrams per liter (mg/L)."}
+ggplot(d_all, aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(
+    aes(yintercept=bench_ctr, linetype="CTR/CCC"), 
+    color="orange") + 
+  geom_hline(
+    aes(yintercept=bench_nal, linetype="NAL"), 
+    color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration (mg/L)") +
+  scale_x_date(
+    date_breaks = "5 years", name = "Date sampled", 
+    date_minor_breaks = "1 year",
+    expand=c(0.02,0.02), date_labels = "%Y") +
+    guides(
+    linetype = guide_legend(
+      title = "Benchmark",
+      override.aes = list(color = c("orange", "red")))) +
+  theme_bw() + 
+  theme(
+    legend.justification = c(1,1),
+    legend.position = c(1, 1),
+    legend.background = element_rect(
+      color = "black", fill = "white", size = 0.2, linetype = "solid"))
+```
+
+#### Figure 1993 to 2018, NOT Log10 Zoomed
+```{r fig_1993to2018_zoom, fig.cap="Lead concentration of stormwater pollution samples over time 1993 to 2013, in units of milligrams per liter (mg/L)."}
+ggplot(d_all, aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(
+    aes(yintercept=bench_ctr, linetype="CTR/CCC"), 
+    color="orange") + 
+  geom_hline(
+    aes(yintercept=bench_nal, linetype="NAL"), 
+    color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration (mg/L)") +
+  scale_x_date(
+    date_breaks = "5 years", name = "Date sampled", 
+    date_minor_breaks = "1 year",
+    expand=c(0.02,0.02), date_labels = "%Y") +
+  coord_cartesian(ylim = c(0, 15)) + 
+    guides(
+    linetype = guide_legend(
+      title = "Benchmark",
+      override.aes = list(color = c("orange", "red")))) +
+  theme_bw() + 
+  theme(
+    legend.justification = c(1,1),
+    legend.position = c(1, 1),
+    legend.background = element_rect(
+      color = "black", fill = "white", size = 0.2, linetype = "solid"))
+```
+
+
+### 2013 to 2018
+
+#### Figure 2013 to 2018, Log10
+```{r fig_2013to2018_log10, fig.cap="Lead concentration of stormwater pollution samples over time 1993 to 2013, on log10 scale in units of milligrams per liter (mg/L)."}
+d_all %>% 
+  filter(
+    date >= as_date("2013-01-01"),
+    date <= as_date("2019-01-01")) %>% 
+  ggplot(aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(aes(yintercept=bench_ctr, linetype="CTR/CCC"), color="orange") + 
+  geom_hline(aes(yintercept=bench_nal, linetype="NAL"), color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration, log10(mg/L)") +
+  scale_y_log_eng() +
+  scale_x_date(
+    date_breaks = "1 years", name = "Date sampled", 
+    date_minor_breaks = "1 month",
+    expand=c(0.02,0.02), date_labels = "%Y") +
+  annotation_logticks(sides = "l") +
+    guides(
+    linetype = guide_legend(
+      title = "Benchmark",
+      override.aes = list(color = c("orange", "red")))) +
+  theme_bw() + 
+  theme(
+    legend.justification = c(1,1),
+    legend.position = c(1, 0.5),
+    legend.background = element_rect(
+      color = "black", fill = "white", size = 0.2, linetype = "solid"))
+```
+
+#### Figure 1993 to 2018, NOT Log10
+```{r fig_2013to2018, fig.cap="Lead concentration of stormwater pollution samples over time 1993 to 2013, in units of milligrams per liter (mg/L)."}
+d_all %>% 
+  filter(
+    date >= as_date("2013-01-01"),
+    date <= as_date("2019-01-01")) %>% 
+  ggplot(aes(x=date, y=pb)) + 
+  geom_line() + geom_point() + 
+  geom_hline(
+    aes(yintercept=bench_ctr, linetype="CTR/CCC"), 
+    color="orange") + 
+  geom_hline(
+    aes(yintercept=bench_nal, linetype="NAL"), 
+    color="red") + 
+  labs(
+    x = "Date sampled",
+    y = "Lead concentration (mg/L)") +
+  scale_x_date(
+    date_breaks = "1 years", name = "Date sampled", 
+    date_minor_breaks = "1 month",
+    expand=c(0.02,0.02), date_labels = "%Y") +
+  scale_colour_manual(values = c("red", "orange")) +
+    guides(
+    linetype = guide_legend(
+      title = "Benchmark",
+      override.aes = list(color = c("orange", "red")))) +
+  theme_bw() + 
+  theme(
+    legend.justification = c(0,1),
+    legend.position = c(0, 1),
+    legend.background = element_rect(
+      color = "black", fill = "white", size = 0.2, linetype = "solid"))
+```
+
+
+## Round 1
+
+### Table 1
+
+1992-2013 Stormwater Pollution Data As Certified by Defendant
+
+Data fixes for plotting:
+
+- 2003-2004: 02.02.04	not tested -> **removed**
+- 2009-2010: No AR on file -> **12.31.09**
+- 2008-2009: 11.04.07, 12.15.07 -> 11.04.**08**, 12.15.**08**
+
+```{r tbl_01}
+d01 %>% 
+  select(`Permit Term`, `Sample Date`, date, pb, pct_exceedance) %>% 
+  # `Pb Concentration`, `Percent Benchmark Exceedance`, `Data Source`
+  datatable() %>% 
+  formatPercentage('pct_exceedance', 2)
+```
+
+#### Figure for Table 1
+
+```{r fig_01, fig.cap="Lead concentration of stormwater pollution samples over time 1992 to 2013, on log10 scale in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from  0.16 mg/L (96% exceedance) on 2012-11-30 to 38.6 mg/L (47,204% exceedance) on 2003-04-14."}
+ggplot(d01, aes(x=date, y=pb)) + 
   geom_line() + geom_point() + 
   geom_hline(aes(yintercept=0.0816), color="red") + 
   labs(
@@ -109,7 +304,7 @@ ggplot(d, aes(x=date, y=pb)) +
 
 ```{r fig_01_notlog, fig.cap="Lead concentration of stormwater pollution samples over time 1992 to 2013, in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from  0.16 mg/L (96% exceedance) on 2012-11-30 to 38.6 mg/L (47,204% exceedance) on 2003-04-14."}
 
-ggplot(d, aes(x=date, y=pb)) + 
+ggplot(d01, aes(x=date, y=pb)) + 
   geom_line() + geom_point() + 
   geom_hline(aes(yintercept=0.0816), color="red") + 
   labs(
@@ -122,32 +317,24 @@ ggplot(d, aes(x=date, y=pb)) +
   theme_bw()
 ```
 
-## Table 10
+### Table 10
 
 2013 to 2017 Stormwater Pollution Data As Certified by Defendant
 
 - Data fixes for plotting: none.
 
 ```{r tbl_10}
-pb_benchmark <- 0.0816
-
-d <- read_excel(lead_xlsx, "Table10") %>% 
-  fill(`Permit Term`) %>% 
-  mutate(
-    date = as_date(`Sample Date`, format="%m.%d.%y", tz=Sys.timezone()),
-    pb = str_extract(`Pb Concentration`, "\\d+\\.*\\d*") %>% as.double(),
-    pct_exceedance = (pb - pb_benchmark) / pb_benchmark)
-d %>% 
+d10 %>% 
   select(`Permit Term`, `Sample Date`, date, pb, pct_exceedance) %>% 
   datatable() %>% 
   formatPercentage('pct_exceedance', 2)
 ```
 
-### Figure for Table 10
+#### Figure for Table 10
 
 ```{r fig_10, fig.cap="Lead concentration of stormwater pollution samples over time 2013 to 2017, on log10 scale in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from 0.25 mg/L (206% exceedance) on 2016-02-17 to 2.7 mg/L (3,209% exceedance) on 2015-12-22."}
 
-ggplot(d, aes(x=date, y=pb)) + 
+ggplot(d10, aes(x=date, y=pb)) + 
   geom_line() + geom_point() + 
   geom_hline(aes(yintercept=0.0816), color="red") + 
   labs(
@@ -164,7 +351,7 @@ ggplot(d, aes(x=date, y=pb)) +
 
 ```{r fig_10_notlog, fig.cap="Lead concentration of stormwater pollution samples over time 2013 to 2017, in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from 0.25 mg/L (206% exceedance) on 2016-02-17 to 2.7 mg/L (3,209% exceedance) on 2015-12-22."}
 
-ggplot(d, aes(x=date, y=pb)) + 
+ggplot(d10, aes(x=date, y=pb)) + 
   geom_line() + geom_point() + 
   geom_hline(aes(yintercept=0.0816), color="red") + 
   labs(
@@ -178,32 +365,24 @@ ggplot(d, aes(x=date, y=pb)) +
 ```
 
 
-## Table 14
+### Table 14
 
 2017-2018 Stormwater Pollution Data As Certified by Trojan
 
 - Data fixes for plotting: none.
 
 ```{r tbl_14}
-pb_benchmark <- 0.0816
-
-d <- read_excel(lead_xlsx, "Table14") %>% 
-  fill(`Permit Term`) %>% 
-  mutate(
-    date = as_date(`Sample Date`, format="%m.%d.%y", tz=Sys.timezone()),
-    pb = str_extract(`Pb Concentration`, "\\d+\\.*\\d*") %>% as.double(),
-    pct_exceedance = (pb - pb_benchmark) / pb_benchmark)
-d %>% 
+d14 %>% 
   select(`Permit Term`, `Sample Date`, date, pb, pct_exceedance) %>% 
   datatable() %>% 
   formatPercentage('pct_exceedance', 2)
 ```
 
-### Figure for Table 14
+#### Figure for Table 14
 
 ```{r fig_14, fig.cap="Lead concentration of stormwater pollution samples over time 2013 to 2017 as certified by Trojan, on log10 scale in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from 1 mg/L (1,126% exceedance) on 2018-03-02 to 2.4 mg/L (2,841% exceedance) on 2018-01-09."}
 
-ggplot(d, aes(x=date, y=pb)) + 
+ggplot(d14, aes(x=date, y=pb)) + 
   geom_line() + geom_point() + 
   geom_hline(aes(yintercept=0.0816), color="red") + 
   labs(
@@ -221,7 +400,7 @@ ggplot(d, aes(x=date, y=pb)) +
 
 ```{r fig_14_notlog, fig.cap="Lead concentration of stormwater pollution samples over time 2013 to 2017 as certified by Trojan, in units of milligrams per liter (mg/L). Note that all samples are in exceedance of the EPA Benchmark for concern of 0.0816 mg/L (shown as red line), ranging from 1 mg/L (1,126% exceedance) on 2018-03-02 to 2.4 mg/L (2,841% exceedance) on 2018-01-09."}
 
-ggplot(d, aes(x=date, y=pb)) + 
+ggplot(d14, aes(x=date, y=pb)) + 
   geom_line() + geom_point() + 
   geom_hline(aes(yintercept=0.0816), color="red") + 
   labs(
